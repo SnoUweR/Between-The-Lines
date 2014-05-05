@@ -18,6 +18,9 @@
             CANVAS_HEIGHT = 640;
         }
 
+        document.getElementById('game').style.width = CANVAS_WIDTH + "px";
+        document.getElementById('game').style.height = CANVAS_HEIGHT + "px";
+
         var STARTING_SPEED = 500,
             PADDLES_MAX_INTERVAL = 100,
             PADDLES_MIN_INTERVAL = 25,
@@ -49,6 +52,7 @@
         var comboText, comboBounce;
         var goodText, goodBounce;
         var toogleSoundButton;
+        var blackSquare;
 
         /////////////////////////////////////
         //VARIABLES FOR SAVING GAME-STATES //
@@ -86,6 +90,7 @@
             game.load.image('starfield', './img/starfield.jpg');
             game.load.image('enemy', './img/enemy.png');
             game.load.image('particle', './img/particle.png');
+            game.load.image('blackSquare', './img/black.png');
             game.load.image('player', './img/player.png');
             game.load.audio('good', './sounds/good.wav');
             game.load.audio('bad', './sounds/bad.wav');
@@ -190,14 +195,18 @@
 
                     addScore();
                     showText();
+                    createBlackSqr();
                     emitter.x = ball.position.x;
                     emitter.y = ball.position.y;
                     emitter.start(true, 2000, null, 25);
-
                 }
                 else {
                     if (isSoundEnabled) badSnd.play();
-                    game.state.start('gameOver', false, false);
+                    ball.body.velocity.setTo(0, 0);
+                    background.events.onInputDown.remove(clicked);
+                    setTimeout(function () {
+                        game.state.start('gameOver', false, false);
+                    }, 500);
                 }
             }
         }
@@ -266,6 +275,7 @@
 
         };
 
+
         /////////////////////////////////////
         //game state - Where game is going //
         /////////////////////////////////////
@@ -304,12 +314,38 @@
           }
         };
 
+        gameState.shutdown = function () {
+            gameMusic.stop();
+            introMusic = null;
+            goodSnd    = null;
+            badSnd     = null;
+            selectSnd  = null;
+            gameMusic  = null;
+            ball.destroy();
+            ball = null;
+            paddleOne.destroy();
+            paddleTwo.destroy();
+            paddleOne = null;
+            paddleTwo = null;
+            goodText.setText("");
+            goodText = null;
+            goodBounce.onComplete.removeAll();
+            goodBounce.stop();
+            goodBounce = null;
+            comboText.setText("");
+            comboText = null;
+            comboBounce.onComplete.removeAll();
+            comboBounce.stop();
+            comboBounce = null;
+
+            console.log('gamestate destroyed');
+        };
+
         //////////////////////////////////
         //State which show on game Over //
         //////////////////////////////////
         gameOverState.create = function () {
 
-            ball.body.velocity.setTo(0, 0);
             isStarted = false;
             background.events.onInputDown.remove(clicked);
             getScore();
@@ -325,7 +361,6 @@
             PostScoreText.setText(HIGHSCORE_SUBMIT);
             HighScoreTitleText.setText(HIGHSCORE_TITLE);
             HighScoreText.setText(LOADING_TEXT);
-            gameMusic.stop();
         };
 
         function getScore() {
@@ -448,6 +483,18 @@
             background.input.priorityID = 0;
         }
 
+        function createBlackSqr() {
+            blackSquare = game.add.sprite(game.world.centerX, game.world.centerY, 'blackSquare');
+            blackSquare.anchor.set(0.5);
+            blackSquare.scale.setTo(CANVAS_WIDTH, 128);
+            blackSquare.alpha = 0;
+
+            game.add.tween(blackSquare).to( { alpha: 0.6 }, 200, Phaser.Easing.Linear.None, true, 0, 0, true);
+
+            blackSquare.onComplete.add(function() {blackSquare.destroy();}, this);
+            blackSquare.start();
+        }
+
         /////////////////
         //Create ball //
         ////////////////
@@ -473,10 +520,10 @@
             else toogleSoundButton.setFrames(1, 1, 0);
 
             introMusic = game.add.audio('intro');
-            goodSnd = game.add.audio('good');
-            badSnd = game.add.audio('bad');
-            selectSnd = game.add.audio('select');
-            gameMusic = game.add.audio('music', true, true);
+            goodSnd    = game.add.audio('good');
+            badSnd     = game.add.audio('bad');
+            selectSnd  = game.add.audio('select');
+            gameMusic  = game.add.audio('music', true, true);
         }
 
         var game = new Phaser.Game(CANVAS_WIDTH,  CANVAS_HEIGHT, Phaser.AUTO, 'game');
