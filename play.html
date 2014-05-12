@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Between The Lines</title>
+    <meta name="language" content="en" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <link href="./css/style.css" rel="stylesheet">
+</head>
+<body>
+<center>
+    <div id="game"></div>
+</center>
+<div class="info">
+    <div class="column">
+        <h3>About</h3>
+        <p>Click when red line is between the green lines</p>
+
+    </div>
+    <div class="column">
+        <h3>Credits</h3>
+        <p><strong>Programming/Creator</strong>:<br/><a href="http://snouwer.ru">Vladislav Kovalev</a></p>
+    </div>
+
+    <div class="column last">
+        <h3>Version</h3>
+        <p id="wip">WORK IN PROGRESS</p>
+        <p><strong>Between The Lines v0.9</strong><br/>May 5, 2014</p>
+        <p><strong>Start date:</strong> May 3, 2014</p>
+        <p><strong>Engine Backend</strong>: <a href='http://phaser.io/'>PhaserJS</a></p>
+        <p><strong>Created</strong> by <a href="mailto:snouwer@gmail.com">Vladislav</a> (<a href="http://www.snouwer.ru">Sn</a>)</p>
+    </div>
+
+    <div style="clear:both"></div>
+</div>
+
+<div id ="footer">
+    Copyright 2014 - <a href="http://me.snouwer.ru">me.snouwer.ru</a>
+</div>
+</body>
+<script type="text/javascript">
+    var Clay = Clay || {};
+    Clay.gameKey = "btl";
+    Clay.readyFunctions = [];
+    Clay.ready = function( fn ) {
+        Clay.readyFunctions.push( fn );
+    };
+    ( function() {
+        var clay = document.createElement("script"); clay.async = true;
+        clay.src = ( "https:" == document.location.protocol ? "https://" : "http://" ) + "clay.io/api/api.js";
+        var tag = document.getElementsByTagName("script")[0]; tag.parentNode.insertBefore(clay, tag);
+    } )();
+</script>
+<script src="./js/webfont.js"></script>
+<script src="./js/phaser.js"></script>
+<script src="./js/main.js"></script>
+</html>
