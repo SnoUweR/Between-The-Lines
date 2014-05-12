@@ -26,6 +26,8 @@
             PADDLES_MIN_INTERVAL = 25,
             PADDLES_FROM_START_INTERVAL = 50,
             PADDLES_FROM_END_INTERVAL = CANVAS_WIDTH - 105,
+            BALL_START_POSITION_X = 25,
+            BALL_START_POSITION_Y = CANVAS_HEIGHT / 2;
             TITLE_TEXT = "BETWEEN THE LINES",
             INSTRUCTIONS_TEXT = "CLICK WHEN RED LINE IS BETWEEN THE GREEN LINES",
             HIGHSCORE_TITLE = "HIGHSCORES",
@@ -70,19 +72,6 @@
 
         function getRandomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-
-        function createPaddles() {
-            if (paddleOne && paddleTwo) {
-                paddleOne.kill();
-                paddleTwo.kill();
-            }
-
-            paddleOne = game.add.sprite(getRandomInt(PADDLES_FROM_START_INTERVAL, PADDLES_FROM_END_INTERVAL), game.world.centerY, 'enemy');
-            paddleOne.anchor.set(0.5);
-            paddleTwo = game.add.sprite(paddleOne.position.x + getRandomInt(PADDLES_MIN_INTERVAL, PADDLES_MAX_INTERVAL),
-                game.world.centerY, 'enemy');
-            paddleTwo.anchor.set(0.5);
         }
 
         function loadAssets() {
@@ -186,8 +175,13 @@
             if (isStarted) {
                 if (ball.position.x < paddleTwo.position.x && ball.position.x > paddleOne.position.x) {
                     if (isSoundEnabled) goodSnd.play();
+                    //BALL_START_POSITION_X = getRandomInt(25, 500);
+                    //BALL_START_POSITION_Y = getRandomInt(100, 600);
                     createPaddles();
+                    //ball.position.x = BALL_START_POSITION_X;
+                    //ball.position.y = BALL_START_POSITION_Y;
                     ball.body.velocity.x = Math.abs(ball.body.velocity.x) + 25;
+
                     if (paddleOne.position.x - ball.position.x < 0)
                     {
                         ball.body.velocity.x = Math.abs(ball.body.velocity.x) * -1;
@@ -272,9 +266,7 @@
 
             introMusic.stop();
             if (isSoundEnabled) introMusic.play();
-
         };
-
 
         /////////////////////////////////////
         //game state - Where game is going //
@@ -304,7 +296,6 @@
             goodBounce=game.add.tween(goodText);
             gameMusic.stop();
             if (isSoundEnabled) gameMusic.play();
-
         };
 
         gameState.update = function () {
@@ -323,6 +314,8 @@
             gameMusic  = null;
             ball.destroy();
             ball = null;
+            paddleOne.kill();
+            paddleTwo.kill();
             paddleOne.destroy();
             paddleTwo.destroy();
             paddleOne = null;
@@ -389,9 +382,9 @@
             if (game.state.current == 'gameOver'
                 && Phaser.Rectangle.contains(PostScoreClickArea, game.input.x, game.input.y) && !isScorePosted) {
                 postScore();
+                isScorePosted = true;
                 PostScoreText.setText("");
                 comboText.setText("");
-                isScorePosted = true;
             } else {
                 game.input.onDown.remove(HighScoreStateClick);
                 game.state.start('MainMenu', false, false);
@@ -472,8 +465,6 @@
             goodText.inputEnabled = true;
         }
 
-
-
         //////////////////////
         //Create background //
         //////////////////////
@@ -499,7 +490,11 @@
         //Create ball //
         ////////////////
         function createBall() {
-            ball = game.add.sprite(25, game.world.centerY, 'player');
+            if (ball) {
+                ball.kill();
+            }
+
+            ball = game.add.sprite(BALL_START_POSITION_X, BALL_START_POSITION_Y, 'player');
             ball.anchor.set(0.5);
             ball.checkWorldBounds = true;
 
@@ -507,6 +502,24 @@
 
             ball.body.collideWorldBounds = true;
             ball.body.bounce.set(1);
+            console.log("BALL: " + BALL_START_POSITION_Y);
+        }
+
+        ///////////////////
+        //Create paddles //
+        ///////////////////
+        function createPaddles() {
+            if (paddleOne && paddleTwo) {
+                paddleOne.kill();
+                paddleTwo.kill();
+            }
+
+            paddleOne = game.add.sprite(getRandomInt(PADDLES_FROM_START_INTERVAL, PADDLES_FROM_END_INTERVAL), BALL_START_POSITION_Y, 'enemy');
+            paddleOne.anchor.set(0.5);
+            paddleTwo = game.add.sprite(paddleOne.position.x + getRandomInt(PADDLES_MIN_INTERVAL, PADDLES_MAX_INTERVAL),
+                BALL_START_POSITION_Y, 'enemy');
+            paddleTwo.anchor.set(0.5);
+            console.log("PADDLES: " + BALL_START_POSITION_Y);
         }
 
         //////////////////
