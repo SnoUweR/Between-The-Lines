@@ -10,25 +10,12 @@
             padding: 0;
         }
 
-        #game {
-            margin-left: 25%;
-        }
     </style>
 </head>
 <body>
 <div id="game"></div>
 <script type="text/javascript">
-    var Clay = Clay || {};
-    Clay.gameKey = "btl";
-    Clay.readyFunctions = [];
-    Clay.ready = function( fn ) {
-        Clay.readyFunctions.push( fn );
-    };
-    ( function() {
-        var clay = document.createElement("script"); clay.async = true;
-        clay.src = ( "https:" == document.location.protocol ? "https://" : "http://" ) + "clay.io/api/api.js";
-        var tag = document.getElementsByTagName("script")[0]; tag.parentNode.insertBefore(clay, tag);
-    } )();
+
 </script>
 <script src="./js/webfont.js"></script>
 <script src="./js/phaser.js"></script>
