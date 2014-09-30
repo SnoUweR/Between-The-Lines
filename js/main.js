@@ -36,7 +36,8 @@
             HIGHSCORE_SUBMIT = "POST SCORE",
             DEVELOPER_COPYRIGHT_TEXT = "Developer\nVladislav Kovalev\nsnouwer@gmail.com",
             LOADING_TEXT = "LOADING...",
-            GOOD_TEXT = ["AWESOME", "INCREDIBLE", "UNBELIEVABLE", "NICE", "COOL", "GREAT", "BEAUTIFUL"];
+            GOOD_TEXT = ["AWESOME", "INCREDIBLE", "UNBELIEVABLE", "NICE", "COOL", "GREAT", "BEAUTIFUL",
+                         "ABSOLUTELY", "YES", "GODLIKE"];
 
         var GameTypeEnum = {
             CLASSIC: 1,
@@ -47,23 +48,34 @@
             }
         }, gameType;
 
-        var MusicList = ['music', 'musicKimono', 'musicNights'];
+
+        var Skins;
+        var SkinDefault = new Object;
+        var SkinDeals = new Object;
+        SkinDefault.score = -1; SkinDeals.score = 700;
+        SkinDefault.name = "player";
+        SkinDeals.name = "playerMod";
+        Skins = [ SkinDefault, SkinDeals ];
+
+        var playerSkin = "player";
+
+
+        var MusicList = ['music', 'musicKimono', 'musicNights', 'musicDarren'];
+        var GuitarMusicList = ['musicGuitar', 'musicNightsGuitar'];
 
         /////////////////////////////////////////////
         //HELPER VARIABLES FOR SAVING GAME-OBJECTS //
         /////////////////////////////////////////////
 
         var redLine, paddleOne, paddleTwo, rectangleBetween;
-        var gameScore = 0, comboCount = 0;
+        var gameScore = 0, comboCount = 0, maxScore = -1;
         var isStarted,  isScorePosted, isSoundEnabled = true;
         var background;
-        var goodSnd, badSnd, gameMusic, introMusic, selectSnd;
+        var goodSnd, badSnd, gameMusic, introMusic, selectSnd, gameGuitarMusic;
         var Leaderboard;
         var emitter;
         var  TitleText, InstructionsText, DeveloperCopyrightText, ScoreText, HighScoreTitleText, HighScoreText,
             PostScoreText, LoadingText, PostScoreClickArea;
-        var comboText, comboBounce;
-        var goodText, goodBounce;
         var toogleSoundButton;
         var blackSquare;
 
@@ -86,6 +98,21 @@
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
+        function stopMusic() {
+            if (gameMusic.isPlaying) gameMusic.stop();
+            if (gameGuitarMusic.isPlaying) gameGuitarMusic.stop();
+            if (introMusic.isPlaying) introMusic.stop();
+        }
+
+
+        function over(object) {
+            object.alpha = 0.5;
+        }
+
+        function out(object) {
+            object.alpha = 1;
+        }
+
         function loadAssets() {
 
             game.load.image('starfield', './img/starfield.jpg');
@@ -93,6 +120,7 @@
             game.load.image('particle', './img/particle.png');
             game.load.image('blackSquare', './img/black.png');
             game.load.image('player', './img/player.png');
+            game.load.image('playerMod', './img/playerMod.png');
             game.load.audio('good', './sounds/good.wav');
             game.load.audio('bad', './sounds/bad.wav');
 
@@ -100,6 +128,10 @@
             game.load.audio('music', './sounds/musicTrimmed.ogg');
             game.load.audio('musicNights', './sounds/musicNights.ogg');
             game.load.audio('musicKimono', './sounds/musicKimono.ogg');
+            game.load.audio('musicDarren', './sounds/musicDarren.ogg');
+
+            game.load.audio('musicNightsGuitar', './sounds/musicNightsGuitar.ogg');
+            game.load.audio('musicGuitar', './sounds/musicTrimmedGuitar.ogg');
 
             game.load.audio('intro', './sounds/intro.ogg');
             game.load.audio('select', './sounds/select.wav');
@@ -111,6 +143,12 @@
 
         function addScore() {
             comboCount++;
+
+            var comboText = game.add.bitmapText(10, 100, 'carrier_command','',12);
+            comboText.inputEnabled = true;
+
+            var comboBounce = game.add.tween(comboText);
+
             if (comboCount > 1)
             {
                 comboText.alpha = 100;
@@ -118,12 +156,18 @@
                 comboText.y = redLine.position.y;
                 comboText.setText("COMBO X" + comboCount);
                 comboBounce.to({ y: CANVAS_HEIGHT, alpha: 0 }, 2000, Phaser.Easing.Linear.None);
-                comboBounce.onComplete.add(function() {comboText.setText("");}, this);
+                comboBounce.onComplete.add(function() {comboText.destroy(); comboText = null;}, this);
                 comboBounce.start();
                 gameScore += (100 - (paddleTwo.position.x - paddleOne.position.x)) * comboCount;
             }
 
-            gameScore += 100 - (paddleTwo.position.x - paddleOne.position.x)
+            gameScore += 100 - (paddleTwo.position.x - paddleOne.position.x);
+
+            if (gameScore > 1500 && !gameGuitarMusic.isPlaying && isSoundEnabled)
+            {
+                stopMusic();
+                gameGuitarMusic.play();
+            }
 
             ScoreText.setText(gameScore);
         }
@@ -137,12 +181,16 @@
         }
 
         function showText() {
+            var goodText = game.add.bitmapText(10, 100, 'carrier_command','',12);
+            var goodBounce = game.add.tween(goodText);
+
+            goodText.inputEnabled = true;
             goodText.alpha = 100;
             goodText.x = redLine.position.x;
             goodText.y = redLine.position.y;
             goodText.setText(GOOD_TEXT[getRandomInt(0, 6)]);
             goodBounce.to({ y: 0, alpha: 0 }, 2000, Phaser.Easing.Linear.None);
-            goodBounce.onComplete.add(function() {goodText.setText("");}, this);
+            goodBounce.onComplete.add(function() {goodText.destroy; goodText = null;}, this);
             goodBounce.start();
         }
 
@@ -160,14 +208,11 @@
         }
 
         function toogleSound() {
-            console.log('sadasd');
             if (isSoundEnabled) {
                 toogleSoundButton.setFrames(1, 1, 0);
-                gameMusic.stop();
-                introMusic.stop();
+                stopMusic();
                 isSoundEnabled = false;
             } else {
-
                 toogleSoundButton.setFrames(0, 0, 1);
                 isSoundEnabled = true;
                 selectSnd.play();
@@ -177,6 +222,11 @@
                 else if (game.state.current == 'MainMenu') {
                     introMusic.play();
                 }
+            }
+
+            if (isLocalStorageAvailable())
+            {
+                localStorage.setItem('isSoundEnabled', isSoundEnabled);
             }
         }
 
@@ -213,6 +263,17 @@
                 tween.onComplete.add(function () {
                     game.state.start('MainMenu', false, false);
                 }, this);
+
+                if (isLocalStorageAvailable()) {
+                    if (localStorage.getItem('isSoundEnabled')) {
+                        isSoundEnabled = (localStorage.getItem('isSoundEnabled') == "true");
+                    }
+
+                    if (localStorage.getItem('maxScore'))
+                    {
+                        maxScore = localStorage.getItem('maxScore');
+                    }
+                }
             };
 
             this.shutdown = function () {
@@ -274,15 +335,6 @@
                 chooseSkinLabel.events.onInputOut.add(out, this);
                 chooseSkinLabel.events.onInputDown.add(chooseSkinClicked);
 
-
-                function over(object) {
-                    object.alpha = 0.5;
-                }
-
-                function out(object) {
-                    object.alpha = 1;
-                }
-
                 isScorePosted = false;
                 gameScore = 0;
                 comboCount = 0;
@@ -290,7 +342,7 @@
                 DeveloperCopyrightText.setText(DEVELOPER_COPYRIGHT_TEXT);
                 InstructionsText.setText(INSTRUCTIONS_TEXT);
 
-                introMusic.stop();
+                stopMusic();
                 if (isSoundEnabled) introMusic.play();
             };
 
@@ -316,11 +368,10 @@
             }
 
             function click(stateName) {
-                introMusic.stop();
+                stopMusic();
                 background.events.onInputDown.remove(click);
                 game.state.start(stateName, false, false);
             }
-
 
             function chooseSkinClicked() {
                 click('chooseSkin');
@@ -346,9 +397,7 @@
 
 
                 ScoreText.setText(gameScore);
-                comboBounce = game.add.tween(comboText);
-                goodBounce = game.add.tween(goodText);
-                gameMusic.stop();
+                stopMusic();
                 if (isSoundEnabled) gameMusic.play();
             };
 
@@ -356,6 +405,7 @@
             this.update = function () {
                 if (redLine.body.blocked.left || redLine.body.blocked.right)
                 {
+                    redLine.scale.x *= -1;
                     comboCount = 0;
                 }
             };
@@ -363,8 +413,9 @@
             this.shutdown = function () {
                 // I think there is more good way to do this
                 background.events.onInputDown.remove(clicked);
-                gameMusic.stop();
+                stopMusic();
                 introMusic.destroy();
+                gameGuitarMusic.destroy();
                 goodSnd.destroy();
                 badSnd.destroy();
                 selectSnd.destroy();
@@ -384,16 +435,6 @@
                 paddleTwo.destroy();
                 paddleOne = null;
                 paddleTwo = null;
-                goodText.setText("");
-                goodText = null;
-                goodBounce.onComplete.removeAll();
-                goodBounce.stop();
-                goodBounce = null;
-                comboText.setText("");
-                comboText = null;
-                comboBounce.onComplete.removeAll();
-                comboBounce.stop();
-                comboBounce = null;
             };
 
             function clicked() {
@@ -405,9 +446,11 @@
                         switch (gameType) {
                             case GameTypeEnum.CLASSIC:
                                 redLine.body.velocity.x = Math.abs(redLine.body.velocity.x) + 25;
+                                redLine.scale.x = 1;
                                 if (paddleOne.position.x - redLine.position.x < 0)
                                 {
                                     redLine.body.velocity.x = Math.abs(redLine.body.velocity.x) * -1;
+                                    redLine.scale.x = -1;
                                 }
                                 break;
                             case GameTypeEnum.HARDCORE:
@@ -420,6 +463,7 @@
                         addScore();
                         showText();
                         createBlackSqr();
+
                         emitter.x = redLine.position.x;
                         emitter.y = redLine.position.y;
                         emitter.start(true, 2000, null, 25);
@@ -473,9 +517,11 @@
 
                 ScoreText.setText("YOUR SCORE: " + gameScore);
 
-                if (isLocalStorageAvailable())
+                if (gameScore > maxScore)
                 {
-                    if (!localStorage.getItem('maxScore') || gameScore > localStorage.getItem('maxScore'))
+                    maxScore = gameScore;
+
+                    if (isLocalStorageAvailable())
                     {
                         localStorage.setItem('maxScore', gameScore);
                     }
@@ -503,6 +549,7 @@
             this.create = function () {
                 TitleText.setText("Choose Skin For Your 'Palka'");
 
+
                 if (isLocalStorageAvailable())
                 {
                     if (localStorage.getItem('maxScore'))
@@ -519,6 +566,31 @@
                     ScoreText.setText("Your Browser Doesn't Support StorageAPI");
                 }
 
+                var skinImagesArray = [];
+                for (var i=0; i<Skins.length; i++)
+                {
+                    skinImagesArray.push(game.add.image(game.world.width / Skins.length + (64 * i), game.world.centerY + 16,
+                                            Skins[i].name));
+                    skinImagesArray[i].anchor.setTo(0.5, 0.5);
+                    if (maxScore >= Skins[i].score)
+                    {
+                        addEvents(skinImagesArray[i], i);
+                    }
+                }
+
+                function addEvents (skinimage, number)
+                {
+                    skinimage.inputEnabled = true;
+                    skinimage.events.onInputOver.add(over, this);
+                    skinimage.events.onInputOut.add(out, this);
+                    skinimage.events.onInputDown.add(function () {
+                        console.warn(number + ": " + Skins[number].name);
+                        playerSkin = Skins[number].name;
+                    });
+                }
+
+                //var skinDefault =
+
                 background.events.onInputDown.add(clicked);
             };
 
@@ -527,6 +599,7 @@
                 TitleText.setText("");
                 background.events.onInputDown.remove(clicked);
             };
+
 
             function clicked() {
                 game.state.start('MainMenu', false, false);
@@ -561,7 +634,6 @@
                 postScore();
                 isScorePosted = true;
                 PostScoreText.setText("");
-                comboText.setText("");
             } else {
                 game.input.onDown.remove(HighScoreStateClick);
                 game.state.start('MainMenu', false, false);
@@ -639,14 +711,8 @@
                 align: 'center'
             });
             PostScoreText.anchor.setTo(0.5, 0.5);
-            if (!PostScoreClickArea) PostScoreClickArea = new Phaser.Rectangle(PostScoreText.x - PostScoreText.width * 5, PostScoreText.y - PostScoreText.height, PostScoreText.width + 200, PostScoreText.height * 4);
-
-
-            if (!comboText) comboText = game.add.bitmapText(10, 100, 'carrier_command','',12);
-            comboText.inputEnabled = true;
-
-            if (!goodText) goodText = game.add.bitmapText(10, 100, 'carrier_command','',12);
-            goodText.inputEnabled = true;
+            if (!PostScoreClickArea) PostScoreClickArea = new Phaser.Rectangle(PostScoreText.x - PostScoreText.width * 5,
+                    PostScoreText.y - PostScoreText.height, PostScoreText.width + 200, PostScoreText.height * 4);
         }
 
         //////////////////////
@@ -666,10 +732,10 @@
             blackSquare.scale.setTo(CANVAS_WIDTH, 128);
             blackSquare.alpha = 0;
 
-            game.add.tween(blackSquare).to( { alpha: 0.6 }, 200, Phaser.Easing.Linear.None, true, 0, 0, true);
+            var blackSquareTween = game.add.tween(blackSquare).to( { alpha: 0.6 }, 200, Phaser.Easing.Linear.None, true, 0, 0, true);
 
-            blackSquare.onComplete.add(function() {blackSquare.destroy();}, this);
-            blackSquare.start();
+            blackSquareTween.onComplete.add(function() {blackSquare.destroy();}, this);
+            blackSquareTween.start();
         }
 
         /////////////////
@@ -677,10 +743,11 @@
         ////////////////
         function createRedLine() {
             if (redLine) {
-                redLine.kill();
+                redLine.destroy();
             }
 
-            redLine = game.add.sprite(BALL_START_POSITION_X, BALL_START_POSITION_Y, 'player');
+            console.log(playerSkin);
+            redLine = game.add.sprite(BALL_START_POSITION_X, BALL_START_POSITION_Y, playerSkin);
             redLine.anchor.set(0.5);
             redLine.checkWorldBounds = true;
 
@@ -688,7 +755,6 @@
 
             redLine.body.collideWorldBounds = true;
             redLine.body.bounce.set(1);
-            console.log("BALL: " + BALL_START_POSITION_Y);
         }
 
         ///////////////////
@@ -707,7 +773,6 @@
             paddleTwo.anchor.set(0.5);
 
             rectangleBetween = new Phaser.Rectangle(paddleOne.x, paddleOne.y - paddleOne.height / 2, paddleTwo.x - paddleOne.x, paddleOne.height);
-            console.log("PADDLES: " + BALL_START_POSITION_Y);
         }
 
         //////////////////
@@ -724,7 +789,8 @@
             goodSnd    = game.add.audio('good');
             badSnd     = game.add.audio('bad');
             selectSnd  = game.add.audio('select');
-            gameMusic  = game.add.audio(MusicList[getRandomInt(0, 2)], true, true);
+            gameMusic  = game.add.audio(MusicList[getRandomInt(0, 3)], true, true);
+            gameGuitarMusic = game.add.audio(GuitarMusicList[getRandomInt(0,1)], true, true);
         }
 
         var game = new Phaser.Game(CANVAS_WIDTH,  CANVAS_HEIGHT, Phaser.AUTO, 'game');
