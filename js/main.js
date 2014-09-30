@@ -23,6 +23,7 @@
         document.getElementById('game').style.width = CANVAS_WIDTH + "px";
         document.getElementById('game').style.height = CANVAS_HEIGHT + "px";
 
+        // Rules Settings
         var STARTING_SPEED = 500,
             PADDLES_MAX_INTERVAL = 100,
             PADDLES_MIN_INTERVAL = 25,
@@ -30,7 +31,9 @@
             PADDLES_FROM_END_INTERVAL = CANVAS_WIDTH - 105,
             BALL_START_POSITION_X = 25,
             BALL_START_POSITION_Y = CANVAS_HEIGHT / 2;
-            TITLE_TEXT = "BETWEEN THE LINES",
+
+        // Some Text Settings
+        var TITLE_TEXT = "BETWEEN THE LINES",
             INSTRUCTIONS_TEXT = "CLICK WHEN RED LINE IS BETWEEN THE GREEN LINES",
             HIGHSCORE_TITLE = "HIGHSCORES",
             HIGHSCORE_SUBMIT = "POST SCORE",
@@ -48,7 +51,6 @@
             }
         }, gameType;
 
-
         var Skins;
         var SkinDefault = new Object;
         var SkinDeals = new Object;
@@ -57,20 +59,14 @@
         SkinDeals.name = "playerMod";
         Skins = [ SkinDefault, SkinDeals ];
 
-        var playerSkin = "player";
-
-
-        var MusicList = ['music', 'musicKimono', 'musicNights', 'musicDarren'];
-        var GuitarMusicList = ['musicGuitar', 'musicNightsGuitar'];
-
         /////////////////////////////////////////////
         //HELPER VARIABLES FOR SAVING GAME-OBJECTS //
         /////////////////////////////////////////////
 
-        var redLine, paddleOne, paddleTwo, rectangleBetween;
+        var redLine, paddleOne, paddleTwo, rectangleBetween, playerSkin = "player";
         var gameScore = 0, comboCount = 0, maxScore = -1;
         var isStarted,  isScorePosted, isSoundEnabled = true;
-        var background;
+        var background, fireBackground;
         var goodSnd, badSnd, gameMusic, introMusic, selectSnd, gameGuitarMusic;
         var Leaderboard;
         var emitter;
@@ -78,6 +74,8 @@
             PostScoreText, LoadingText, PostScoreClickArea;
         var toogleSoundButton;
         var blackSquare;
+        var MusicList = ['music', 'musicKimono', 'musicNights', 'musicDarren'];
+        var GuitarMusicList = ['musicGuitar', 'musicNightsGuitar'];
 
         /////////////////////////////////////
         //VARIABLES FOR SAVING GAME-STATES //
@@ -104,6 +102,37 @@
             if (introMusic.isPlaying) introMusic.stop();
         }
 
+        function destroyMusic() {
+            if (introMusic) {
+                introMusic.destroy();
+                introMusic = null;
+            }
+
+            if (gameGuitarMusic) {
+                gameGuitarMusic.destroy();
+                gameGuitarMusic = null;
+            }
+
+            if (goodSnd) {
+                goodSnd.destroy();
+                goodSnd = null;
+            }
+
+            if (badSnd) {
+                badSnd.destroy();
+                badSnd = null;
+            }
+
+            if (selectSnd) {
+                selectSnd.destroy();
+                selectSnd = null;
+            }
+
+            if (gameMusic) {
+                gameMusic.destroy();
+                gameMusic = null;
+            }
+        }
 
         function over(object) {
             object.alpha = 0.5;
@@ -119,10 +148,13 @@
             game.load.image('enemy', './img/enemy.png');
             game.load.image('particle', './img/particle.png');
             game.load.image('blackSquare', './img/black.png');
+            game.load.image('transparent', './img/transparent.png')
             game.load.image('player', './img/player.png');
             game.load.image('playerMod', './img/playerMod.png');
             game.load.audio('good', './sounds/good.wav');
             game.load.audio('bad', './sounds/bad.wav');
+
+            game.load.script('filter', './js/fire.js');
 
             // Don't forget to add new music to MusicList array
             game.load.audio('music', './sounds/musicTrimmed.ogg');
@@ -141,6 +173,7 @@
 
         }
 
+        var filter;
         function addScore() {
             comboCount++;
 
@@ -163,11 +196,21 @@
 
             gameScore += 100 - (paddleTwo.position.x - paddleOne.position.x);
 
-            if (gameScore > 1500 && !gameGuitarMusic.isPlaying && isSoundEnabled)
+            if (gameScore >= 1500)
             {
-                stopMusic();
-                gameGuitarMusic.play();
+                if (!gameGuitarMusic.isPlaying && isSoundEnabled)
+                {
+                    stopMusic();
+                    gameGuitarMusic.play();
+                }
+
+                if (!filter) {
+                    filter = game.add.filter('Fire', 800, 600);
+                    filter.alpha = 0.0;
+                    fireBackground.filters = [filter];
+                }
             }
+
 
             ScoreText.setText(gameScore);
         }
@@ -395,7 +438,6 @@
 
                 startGame();
 
-
                 ScoreText.setText(gameScore);
                 stopMusic();
                 if (isSoundEnabled) gameMusic.play();
@@ -408,33 +450,29 @@
                     redLine.scale.x *= -1;
                     comboCount = 0;
                 }
+
+                if (filter) filter.update();
             };
 
             this.shutdown = function () {
                 // I think there is more good way to do this
                 background.events.onInputDown.remove(clicked);
                 stopMusic();
-                introMusic.destroy();
-                gameGuitarMusic.destroy();
-                goodSnd.destroy();
-                badSnd.destroy();
-                selectSnd.destroy();
-
-                introMusic = null;
-                goodSnd    = null;
-                badSnd     = null;
-                selectSnd  = null;
-
-                gameMusic.destroy();
-                gameMusic  = null;
+                destroyMusic();
                 redLine.destroy();
                 redLine = null;
-                paddleOne.kill();
-                paddleTwo.kill();
                 paddleOne.destroy();
                 paddleTwo.destroy();
                 paddleOne = null;
                 paddleTwo = null;
+
+                if (filter) {
+                    filter.destroy();
+                    filter = null;
+                    fireBackground.destroy();
+                    fireBackground = null;
+                }
+
             };
 
             function clicked() {
@@ -724,9 +762,13 @@
             background.input.priorityID = 0;
             background.width = CANVAS_WIDTH;
 
+            fireBackground = game.add.sprite(0, 0, 'transparent');
+            fireBackground.scale.setTo(CANVAS_WIDTH, CANVAS_HEIGHT);
+
         }
 
         function createBlackSqr() {
+            //actually, it's white square
             blackSquare = game.add.sprite(game.world.centerX, game.world.centerY, 'blackSquare');
             blackSquare.anchor.set(0.5);
             blackSquare.scale.setTo(CANVAS_WIDTH, 128);
